@@ -1,0 +1,265 @@
+#read data as RDD
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items/part-00000") OR  orderItems = sc.textFile("file:///home/maria_dev/cca-175/retail_db/order_items/part-00000")
+
+#Read Json File
+sqlContext.read.json("./File/You/Want")
+
+#open a file and create a RDD
+productsRaw = open("./retail_db/products/part-00000").read().splitlines()
+productRDD = sc.parallelize(productsRaw
+
+#convert to list
+OrderItemsList = orderItems.collect()
+
+for i in revenuePerOrder.take(10):print(i)
+
+//open a file and create a RDD
+productsRaw = open("./retail_db/products/part-00000").read().splitlines()
+productRDD = sc.parallelize(productsRaw)
+------------------------------------------------------------------
+#MAP
+#use map to build a RDD of tuples
+orderItems = sc.textFile("file:///home/maria_dev/cca-175/retail_db/order_items/part-00000")
+orderItemsMap = orderItems.map(lambda orderItem: (int(orderItem.split(",")[1]),float(orderItem.split(",")[4])))
+for i in orderItemsMap.take(10):
+	print i
+//
+(1, 299.98000000000002)
+(2, 199.99000000000001)
+(2, 250.0)
+(2, 129.99000000000001)
+(4, 49.979999999999997)
+(4, 299.94999999999999)
+(4, 150.0)
+(4, 199.91999999999999)
+(5, 299.98000000000002)
+(5, 299.94999999999999)
+#use flat map to build a RDD
+lineList = ["How are you","let us perform","word count using flatMap","to understand flatMap in detail"]
+lines = sc.parallelize(lineList)
+words = lines.flatMap(lambda l: l.split(" "))
+for i in words.collect(): print(i)
+//How
+are
+you
+let
+us
+perform
+word
+count
+using
+flatMap
+to
+understand
+flatMap
+in
+detail
+------------------------------------
+words = lines.map(lambda l: l.split(" "))
+for i in words.collect(): print(i)
+['How', 'are', 'you']
+['let', 'us', 'perform']
+['word', 'count', 'using', 'flatMap']
+['to', 'understand', 'flatMap', 'in', 'detail']
+
+
+_______________________________________________________________
+#FILTER
+orders = sc.textFile("/user/maria_dev/data/retail_db/orders/part-00000")
+ordersComplete = orders.filter(lambda order:order.split(",")[-1] == "COMPLETE")
+ordersComplete = orders.filter(lambda order:order.split(",")[-1] == "COMPLETE" or order.split(",")[-1] == "CLOSED")
+ordersComplete = orders.filter(lambda order: \
+(order.split(",")[-1] in ["COMPLETE", "CLOSED"]) and order.split(",")[1][:7] =="2014-01"
+)
+
+_________________________________________
+#JOIN
+orders = sc.textFile("/user/maria_dev/data/retail_db/orders/")
+#(order_id)(order_date)(order_customer_id)(status)'
+orderMap = orders.map ( \
+lambda record: (int(record.split(",")[0]),record.split(",")[3]))
+		(order_id,status)
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items")
+#(order_item_id)(order_item_order_id)(order_item_product_id)(quantity)(order_item_subtotal)(product_price)'
+orderItemsMap = orderItems.map ( \
+lambda record: (int(record.split(",")[1]),float(record.split(",")[4])))
+		(order_id,subtotal)
+#Inner Join
+ordersJoin = orderMap.join(orderItemsMap)
+for i in ordersJoin.take(10):print(i)
+#LeftOuterJoin
+ordersLeftOuterJoin = orderMap.leftOuterJoin(orderItemsMap)
+ordersLeftOuterFilter = ordersLeftOuterJoin.filter(lambda o:o[1][1] == None)
+#RightOuterJoin
+ordersRightOuterJoin = orderItemsMap.rightOuterJoin(orderMap)
+ordersRightOuterFilter = ordersRightOuterJoin.filter(lambda o:o[1][0] == None)
+
+_______________________________________
+#AGGREGATION
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items")
+orderItemsFiltered = orderItems.filter( \
+lambda oi: int(oi.split(",")[1]) == 2)
+orderItemsSubtotals = orderItemsFiltered.map( \
+lambda oi: float(oi.split(",")[4]))
+from operator import add
+orderItemsSubtotals.reduce(add) OR orderItemsSubtotals.reduce(lambda x,y: x + y)
+________________________________________
+#Get order items details which have minimum order_item_subtotal for given order_id
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items")
+orderItemsFiltered = orderItems.filter(lambda oi: int(oi.split(",")[1]) == 2)
+orderItemsReduce = orderItemsFiltered.reduce(lambda x,y: \
+x if (float(x.split(",")[4])) < float(y.split(",")[4]) else y)
+___________________________________________
+COUNT BY KEY
+orders = sc.textFile("/user/maria_dev/data/retail_db/orders/")
+orderStatus = orders.map(lambda o: \
+(o.split(",")[3],1))
+countByStatus = orderStatus.countByKey()
+_____________________________________________
+GROUP BY KEY
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda oi: \
+(int(oi.split(",")[1]),float(oi.split(",")[4])))
+orderItemsGroupByOrderId = orderItemsMap.groupByKey()
+-------------------------------------------
+GROUP BY KEY: get order items sorted by order_item_subtotal for each order ID
+
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda oi: \
+(int(oi.split(",")[1]),oi))
+orderItemsGroupByID = orderItemsMap.groupByKey()
+orderItemsSortedBySubPerOrder = orderItemsGroupByID.flatMap(lambda ois: \
+sorted(ois[1],key = lambda k: float(k.split(",")[4]),reverse=True))
+------------------------------------------
+GROUP BY KEY
+products = sc.textFile("/user/maria_dev/data/retail_db/products")
+productsFiltered = products.filter(lambda p: p.split(",")[4] != "")
+productsMap = productsFiltered.map(lambda p: \
+(int(p.split(",")[1]),p))
+productsGroupByCategoryId = productsMap.groupByKey()
+//t = productsGroupByCategoryId.first()
+//sorted(t[1],key=lambda k: float(k.split(",")[4]))
+topNProductsByCategory = productsGroupByCategoryId.flatMap(lambda p:sorted(p[1],key=lambda k: float(k.split(",")[4]),reverse=True)[:3])
+____________________________________________
+REDUCE BY KEY
+//use rdd.map function and convert to a new RDD
+orderItemsMap = orderItems.map(lambda oi: (int(oi.split(",")[1]),float(oi.split(",")[4])))
+
+//use rdd.reduce function to aggregate by the First value in a tuple and do calculation
+revenuePerOrder = orderItemsMap.reduceByKey(lambda curr,next: curr+next)
+----------------------------------------------
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda oi: \
+(int(oi.split(",")[1]),float(oi.split(",")[4])))
+
+from operator import add
+revenuePerOrderId = orderItemsMap.reduceByKey(add)
+revenuePerOrderId = orderItemsMap.reduceByKey(lambda x,y : x + y)
+
+minSubtotalPerOrderId = orderItemsMap.reduceByKey(lambda x,y: x if x < y else y)
+
+#Get order item details with minimum subtotal for each order_id
+orderItemsMap = orderItems.map(lambda oi: \
+	(int(oi.split(",")[1]),oi))
+minSubtotalPerOrderId = orderItemsMap.reduceByKey(lambda x,y: \
+	x if x.split(",")[4] < y.split(",")[4] else y )
+________________________________________________
+AGGREGATE BY KEY:
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda oi: \
+(int(oi.split(",")[1]),float(oi.split(",")[4])))
+orderItemsAggregateByKey = orderItemsMap.aggregateByKey((0.0,0), \
+lambda x,y: (x[0] + y, x[1] + 1 ),  \
+lambda x,y: (x[0] + y[0],x[1] + y[1]))
+First lambda: // x:(0.0,0) y: 199.99  ->   | x:(129.99,1)
+Second lambda: x: :(129.99,1) y:(199.99,1)
+___________________________________________________
+SORT BY KEY:
+products = sc.textFile("/user/maria_dev/data/retail_db/products")
+productsMap = products.filter(lambda p: p.split(",")[4] !=""). \
+map(lambda p: (float(p.split(",")[4]),p))
+productsSortedByPrice = productsMap.sortByKey()
+productsSortedMap = productsSortedByPrice.map(lambda p: p[1].split(",")[1])
+----------------------------------------------------
+SORT BY CATEGORY AND BY PRICE
+products = sc.textFile("/user/maria_dev/data/retail_db/products")
+productsMap = products.filter(lambda p: p.split(",")[4] !=""). \
+map(lambda p: ((int(p.split(",")[1]),float(p.split(",")[4])),p))
+productsSortedByKey = productsMap.sortByKey("false")
+//TRICKY
+productsMap = products.filter(lambda p: p.split(",")[4] !=""). \
+map(lambda p: ((int(p.split(",")[1]),-float(p.split(",")[4])),p))
+productsSortedByKey = productsMap.sortByKey().map(lambda p: p[1])
+___________________________________________________________________
+#Get top N products by price - Global Ranking -sortByKey and take
+products = sc.textFile("/user/maria_dev/data/retail_db/products")
+productsMap = products.filter(lambda p: p.split(",")[4] !=""). \
+map(lambda p: (float(p.split(",")[4]),p))
+productsSortByPrice = productsMap.sortByKey(False)
+for i in productsSortByPrice.map(lambda p: p[1]).take(5):print(i)
+___________________________________________________________________
+#Get top N products by price - Global Ranking -top or takeOrdered
+products = sc.textFile("/user/maria_dev/data/retail_db/products")
+productsFiltered = products.filter(lambda p: p.split(",")[4] != "")
+topNProducts = productsFiltered.top(5,key = lambda k:(int(k.split(",")[1]), float(k.split(",")[4])))
+topNProducts = productsFiltered.takeOrdered(5,key = lambda k: -float(k.split(",")[4]))
+____________________________________________________________________
+#Get top N priced products - By key Ranking
+#Using groupByKey and flatMap
+products = sc.textFile("/user/maria_dev/data/retail_db/products")
+proproductsFiltered = products.filter(lambda p: p.split(",")[4] != "")
+productsMap = productsFiltered.map(lambda p: (int(p.split(",")[1]),p))
+productsGroupByCategoryId = productsMap.groupByKey()
+t = productsGroupByCategoryId.filter(lambda p: p[0] == 59).first() #products itervative of categoryId = 59
+def getTopNPricedProductsPerCategoryId(productCategoryId,topN):
+	productSorted = sorted(productCategoryId[1],key = lambda p: float(p.split(",")[4]),reverse = True) #All products sorted by Price
+	productPrices = map(lambda p: float(p.split(",")[4]), productSorted) #all prices
+	topNPrices =sorted(set(productPrices),reverse = True) [:topN] #top 3 prices
+	import itertools as it
+	return it.takewhile(lambda p: float(p.split(",")[4]) in topNPrices,productSorted) #all products in top 3 prices
+
+topNPricedProducts = productsGroupByCategoryId.flatMap(lambda p: getTopNPricedProductsPerCategoryId(p,3))
+______________________________________________________________________
+#SET OPERATION
+orders = sc.textFile("/user/maria_dev/data/retail_db/orders/")
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items")
+
+orders201312 = orders.filter(lambda o: \
+o.split(",")[1][:7] == "2013-12").map(lambda o: (int(o.split(",")[0]),o))
+
+orders201401 = orders.filter(lambda o: \
+o.split(",")[1][:7] == "2014-01").map(lambda o: (int(o.split(",")[0]),o))
+
+orderItemsMap = orderItems.map(lambda oi: (int(oi.split(",")[1]),oi))
+
+ordersItems201312 = orders201312.join(orderItemsMap).map(lambda oi: oi[1][1]) //orderItems
+ordersItems201401 = orders201401.join(orderItemsMap).map(lambda oi: oi[1][1]) //orderItems
+------------------------------------------------------
+SET OPERATION - Union - Get products ids sold in 2013-12 & 2014-01
+products201312 = ordersItems201312.map(lambda p: int(p.split(",")[2])) //product id
+products201401 = ordersItems201401.map(lambda p: int(p.split(",")[2])) //product id
+allproducts = products201312.union(products201401).distinct() //Union
+commonproducts = products201312.intersection(products201401).distinct() //intersect
+SET OPERATION - mins - Get products in 2013-12 but not in 2014-01
+products201312only = products201312.subtract(products201401).distinct() //min
+products201401only = products201401.subtract(products201312).distinct()
+productsOnlyInOneMonth = products201312only.union(products201401only)
+____________________________________________________________________________
+SAVE INTO FILE
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda oi: (int(oi.split(",")[1]),float(oi.split(",")[4]))).map(lambda x:(x[0],round(x[1],2)))
+revenuePerOrderId = orderItemsMap.reduceByKey(add).map(lambda x: str(x[0]) + "\t" + str(x[1]))
+revenuePerOrderId.saveAsTextFile("/user/maria_dev/data/")
+---------------------------------------------------
+#Compress
+revenuePerOrderId.saveAsTextFile("/user/maria_dev/data/revenue_per_orderidCompressor", compressionCodecClass="org.apache.hadoop.io.compress.GzipCodec")
+----------------------------------------------------
+#Save as json
+orderItems = sc.textFile("/user/maria_dev/data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda oi: (int(oi.split(",")[1]),float(oi.split(",")[4])))
+revenuePerOrderId = orderItemsMap.reduceByKey(add).map(lambda x:(x[0],round(x[1],2)))
+revenuePerOrderIdDF = revenuePerOrderId.toDF(schema=["order_id","order_revenue"])
+revenuePerOrderIdDF.save("/user/maria_dev/data/revenue_per_orderid_Json","json")
+revenuePerOrderIdDF.write.json("/user/maria_dev/data/revenue_per_orderid_Json")
+
+sqlContext.read.json("/user/maria_dev/data/revenue_per_orderid_Json").show()
