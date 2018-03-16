@@ -1,0 +1,36 @@
+Import database into Hive
+
+sqoop import \
+--connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--driver com.mysql.jdbc.Driver \
+--table order_items \
+--hive-import \
+--hive-database sqoop_import \
+--hive-table order_items \
+--num-mappers 2
+----------------------------------------------------
+Overwrite original data
+
+sqoop import \
+--connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--driver com.mysql.jdbc.Driver \
+--table order_items \
+--hive-import \
+--hive-database sqoop_import \
+--hive-table order_items \
+--hive-overwrite \
+--num-mappers 2
+----------------------------------------------------
+Import all tables
+
+sqoop import-all-tables \
+--connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--driver com.mysql.jdbc.Driver \
+--warehouse-dir /user/maria_dev/cca-175/sqoop_hive \
+--autoreset-to-one-mapper

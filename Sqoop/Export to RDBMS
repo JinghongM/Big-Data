@@ -1,0 +1,58 @@
+Export to RDBMS
+
+sqoop export \
+--connect jdbc:mysql://localhost/retail_export \
+--username root \
+--password hadoop \
+--export-dir /apps/hive/warehouse/sqoop_import.db/daily_revenue \
+--table daily_revenue \
+--input-fields-terminated-by "\001" \
+--num-mappers 1
+-----------------------------------------------------------------
+Import certain columns
+sqoop export \
+--connect jdbc:mysql://localhost/retail_export \
+--username root \
+--password hadoop \
+--export-dir /apps/hive/warehouse/sqoop_import.db/daily_revenue \
+--table daily_revenue \
+--columns order_date,revenue \
+--input-fields-terminated-by "\001" \
+--num-mappers 1
+------------------------------------------------------------------
+Update Certain columns
+sqoop export \
+--connect jdbc:mysql://localhost/retail_export \
+--username root \
+--password hadoop \
+--export-dir /apps/hive/warehouse/sqoop_import.db/daily_revenue \
+--table daily_revenue \
+--update-key order_date \
+--input-fields-terminated-by "\001" \
+--num-mappers 1
+--------------------------------------------------------------
+Allow insert update
+
+sqoop export \
+--connect jdbc:mysql://localhost/retail_export \
+--username root \
+--password hadoop \
+--export-dir /apps/hive/warehouse/sqoop_import.db/daily_revenue \
+--table daily_revenue \
+--update-key order_date \
+--update-mode allowinsert \
+--input-fields-terminated-by "\001" \
+--num-mappers 1
+------------------------------------------------------------------------
+The table in which data will be staged before being inserted into the destination table.
+After insertion, the staging-table will be cleared
+sqoop export \
+--connect jdbc:mysql://localhost/retail_export \
+--username root \
+--password hadoop \
+--export-dir /apps/hive/warehouse/sqoop_import.db/daily_revenue \
+--table daily_revenue \
+--staging-table daily_revenue_stage \
+--clear-staging-table \
+--input-fields-terminated-by "\001" \
+--num-mappers 1

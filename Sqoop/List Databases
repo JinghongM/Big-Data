@@ -1,0 +1,7 @@
+LIST DATABASES
+
+sqoop list-databases \
+--connect jdbc:mysql://localhost \
+--username root \
+--password hadoop
+

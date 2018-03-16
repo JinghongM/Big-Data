@@ -1,0 +1,112 @@
+Import data from RDBM to HDFS
+--warehouse-dir: create a directory called the table name;
+--target-dir: import directly into the directory
+sqoop import --connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--table products
+--warehouse-dir /user/maria_dev/cca-175/sqoop/
+(-- num-mappers 1)
+(--append)
+(IF not working, add: --driver com.mysql.jdbc.Driver)
+--------------------------------------------------------------
+If there is a reundent file which has the same as destination file
+
+sqoop import --connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--table order_items \
+--warehouse-dir /user/maria_dev/sqoop/order_items \
+--delete-target-dir
+
+---------------------------------------------------------------
+Thing to remember for split-by Column should be indexed values in the field should be sparse
+also should be sequence generated it should not have null values
+
+sqoop import --connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--table order_copy
+--warehouse-dir /user/maria_dev/cca-175/sqoop/
+--split-by order_id
+-------------------------------------------------------------------
+Imports data to SequenceFiles
+
+sqoop import --connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--table order_items \
+--warehouse-dir /user/maria_dev/cca-175/sqoop \
+--num-mappers 2 \
+--as-sequencefile
+--------------------------------------------------------------------
+Imports data as plain text (default)
+Enable compression
+
+sqoop import --connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--table order_items \
+--warehouse-dir /user/maria_dev/cca-175/sqoop \
+--num-mappers 2 \
+--as-textfile \
+--compress
+---------------------------------------------------------------------
+Boundary query to use for creating splits
+
+sqoop import --connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--table order_items \
+--warehouse-dir /user/maria_dev/cca-175/sqoop/ \
+--boundary-query \
+'select min(order_item_id),max(order_item_id) from order_items where order_item_id >=99999'
+----------------------------------------------------------------------
+Columns to import from table
+
+sqoop import --connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--table order_items \
+--columns order_item_order_id,order_item_id,order_item_subtotal \
+--warehouse-dir /user/maria_dev/cca-175/sqoop/ 
+-------------------------------------------------------------------------
+HDFS destination dir
+
+sqoop import \
+--connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--target-dir /user/maria_dev/cca-175/sqoop/orders \
+--num-mappers 2 \
+--query "select * from orders where \$CONDITIONS and order_date like '2014-01%'" \
+--split-by order_id \
+--append
+--------------------------------------------------------------------------
+Conditional import
+
+sqoop import \
+--connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--driver com.mysql.jdbc.Driver \
+--target-dir /user/maria_dev/cca-175/sqoop/orders \
+--num-mappers 2 \
+--table orders \
+--where "order_date like '2014-02%'" \
+--append
+-------------------------------------------------------------------------------
+Check column import
+sqoop import \
+--connect jdbc:mysql://localhost/retail_db \
+--username root \
+--password hadoop \
+--driver com.mysql.jdbc.Driver \
+--target-dir /user/maria_dev/cca-175/sqoop/orders \
+--num-mappers 2 \
+--table orders \
+--check-column order_date \
+--incremental append \
+--last-value '2014-02-28' \
+--append
+-------------------------------------------------------------------------------
